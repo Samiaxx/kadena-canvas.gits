@@ -1,6 +1,12 @@
 import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl } from 'react-leaflet';
 import { Node } from '@/data/mockData';
 import { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface NodeMapProps {
   nodes: Node[];
@@ -15,6 +21,7 @@ const TYPE_COLORS = {
 
 export function NodeMap({ nodes, theme = 'dark' }: NodeMapProps) {
   const [mounted, setMounted] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -49,28 +56,56 @@ export function NodeMap({ nodes, theme = 'dark' }: NodeMapProps) {
               fillOpacity: 0.6,
               weight: 0,
             }}
+            eventHandlers={{
+              click: () => setSelectedNode(node)
+            }}
           >
-            <Popup>
-              <div className="p-1 min-w-[160px] text-foreground">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-display font-bold text-sm">{node.type} Node</span>
-                  <div className={`w-2 h-2 rounded-full ${node.status === 'Online' ? 'bg-green-500' : 'bg-red-500'}`} />
-                </div>
-                <div className="space-y-1 text-xs opacity-80">
-                  <div className="flex justify-between">
-                    <span>Location:</span>
-                    <span>{node.city}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>ID:</span>
-                    <span className="font-mono">{node.id}</span>
-                  </div>
-                </div>
+            <Popup className="md:hidden">
+              <div className="p-1 min-w-[120px]">
+                <div className="font-bold">{node.type}</div>
+                <div className="text-xs opacity-80">{node.city}</div>
               </div>
             </Popup>
           </CircleMarker>
         ))}
       </MapContainer>
+
+      <Dialog open={!!selectedNode} onOpenChange={() => setSelectedNode(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${selectedNode?.status === 'Online' ? 'bg-green-500' : 'bg-red-500'}`} />
+              {selectedNode?.type} Node Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedNode && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium opacity-70">Node ID:</span>
+                <span className="text-sm font-mono">{selectedNode.id}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium opacity-70">Location:</span>
+                <span className="text-sm">{selectedNode.city}, {selectedNode.country}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium opacity-70">Status:</span>
+                <span className={`text-sm font-bold ${selectedNode.status === 'Online' ? 'text-green-500' : 'text-red-500'}`}>
+                  {selectedNode.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium opacity-70">Uptime:</span>
+                <span className="text-sm">{selectedNode.uptime}%</span>
+              </div>
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium opacity-70">IP Address:</span>
+                <span className="text-sm font-mono">{selectedNode.ip}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
