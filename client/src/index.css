@@ -75,53 +75,33 @@
   background: transparent !important;
 }
 
-/* Heartbeat Animation for Node Dots */
-@keyframes heartbeat {
+/* Subtle Pulsing Beacon (Stay in place, no jump) */
+@keyframes beacon-pulse {
   0% {
-    transform: scale(1);
-    opacity: 0.9;
-    filter: drop-shadow(0 0 2px currentColor);
+    stroke-opacity: 0.8;
+    stroke-width: 2;
   }
-  14% {
-    transform: scale(1.3);
-    opacity: 1;
-    filter: drop-shadow(0 0 6px currentColor);
-  }
-  28% {
-    transform: scale(1);
-    opacity: 0.9;
-    filter: drop-shadow(0 0 2px currentColor);
-  }
-  42% {
-    transform: scale(1.3);
-    opacity: 1;
-    filter: drop-shadow(0 0 6px currentColor);
-  }
-  70% {
-    transform: scale(1);
-    opacity: 0.9;
-    filter: drop-shadow(0 0 2px currentColor);
-  }
-}
-
-/* Subtle outer ripple for the live signal */
-@keyframes signal-ripple {
-  0% {
-    transform: scale(1);
-    opacity: 0.5;
+  50% {
+    stroke-opacity: 0.2;
+    stroke-width: 12;
   }
   100% {
-    transform: scale(3);
-    opacity: 0;
+    stroke-opacity: 0;
+    stroke-width: 14;
   }
 }
 
-.node-dot-heartbeat {
+.node-beacon {
   transform-origin: center;
-  animation: heartbeat 2s infinite ease-in-out;
+  animation: beacon-pulse 2s infinite ease-out;
 }
 
-.node-signal-ripple {
-  transform-origin: center;
-  animation: signal-ripple 2s infinite cubic-bezier(0.21, 0.53, 0.56, 0.8);
+/* Core Glow (Static position) */
+@keyframes core-glow {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 1px currentColor); }
+  50% { filter: brightness(1.2) drop-shadow(0 0 3px currentColor); }
+}
+
+.node-core-glow {
+  animation: core-glow 2s infinite ease-in-out;
 }

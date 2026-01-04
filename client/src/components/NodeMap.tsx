@@ -47,38 +47,38 @@ export function NodeMap({ nodes, theme = 'dark' }: NodeMapProps) {
 
         {nodes.map((node) => (
           <div key={node.id}>
-            {/* The Outer Signal Ripple */}
+            {/* The Animated Signal (Stays in place, just expands stroke) */}
             <CircleMarker 
               center={[node.lat, node.lng]}
-              radius={6}
-              className="node-signal-ripple"
+              radius={1}
+              className="node-beacon"
               pathOptions={{ 
                 color: TYPE_COLORS[node.type], 
-                fillColor: TYPE_COLORS[node.type],
-                weight: 1,
-                opacity: 0.4,
-                fillOpacity: 0.2
+                fillColor: 'transparent',
+                weight: 2,
+                opacity: 0.8,
+                fillOpacity: 0
               }}
               interactive={false}
             />
-            {/* The Primary Circular Dot with Heartbeat */}
+            {/* The Solid Core Node (Stable) */}
             <CircleMarker 
               center={[node.lat, node.lng]}
               radius={4}
-              className="node-dot-heartbeat"
+              className="node-core-glow"
               pathOptions={{ 
                 color: TYPE_COLORS[node.type], 
                 fillColor: TYPE_COLORS[node.type], 
                 fillOpacity: 1,
-                weight: 2,
-                opacity: 0.5
+                weight: 1,
+                opacity: 1
               }}
               eventHandlers={{
                 click: () => setSelectedNode(node)
               }}
             >
               <Popup className="md:hidden">
-                <div className="p-1 min-w-[120px]">
+                <div className="p-1 min-w-[120px] text-foreground">
                   <div className="font-bold">{node.type}</div>
                   <div className="text-xs opacity-80">{node.city}</div>
                 </div>
