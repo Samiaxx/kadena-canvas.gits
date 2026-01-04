@@ -67,10 +67,15 @@ export function GlobeView({ nodes, theme = 'dark' }: GlobeViewProps) {
         pointAltitude={0.05}
         pointColor="color"
         pointRadius={0.5}
-        pointsMerge={false} // Important for individual clickability
+        pointsMerge={false}
         onPointClick={(point: any) => {
           setSelectedNode(point);
         }}
+        ringColor={(d: any) => d.color}
+        ringMaxRadius={2.5}
+        ringPropagationSpeed={1}
+        ringRepeatPeriod={1500}
+        ringsData={globeData}
         pointLabel={(d: any) => `
           <div style="background: ${theme === 'dark' ? 'rgba(10,10,10,0.9)' : 'rgba(255,255,255,0.9)'}; 
                padding: 8px; border-radius: 4px; border: 1px solid rgba(128,128,128,0.2); 

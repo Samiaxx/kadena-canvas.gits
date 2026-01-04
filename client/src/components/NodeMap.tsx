@@ -50,11 +50,13 @@ export function NodeMap({ nodes, theme = 'dark' }: NodeMapProps) {
             key={node.id}
             center={[node.lat, node.lng]}
             radius={4}
+            className="node-pulse"
             pathOptions={{ 
               color: TYPE_COLORS[node.type], 
               fillColor: TYPE_COLORS[node.type], 
-              fillOpacity: 0.6,
-              weight: 0,
+              fillOpacity: 0.8,
+              weight: 2,
+              opacity: 0.4
             }}
             eventHandlers={{
               click: () => setSelectedNode(node)
