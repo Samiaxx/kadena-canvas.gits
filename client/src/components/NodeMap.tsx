@@ -47,33 +47,31 @@ export function NodeMap({ nodes, theme = 'dark' }: NodeMapProps) {
 
         {nodes.map((node) => (
           <div key={node.id}>
-            {/* The Outer Animated Beep Ring */}
+            {/* The Outer Signal Ripple */}
             <CircleMarker 
               center={[node.lat, node.lng]}
-              radius={8}
-              className="node-beep"
+              radius={6}
+              className="node-signal-ripple"
               pathOptions={{ 
                 color: TYPE_COLORS[node.type], 
-                fillColor: 'transparent',
-                weight: 2,
-                opacity: 0.6,
-                fillOpacity: 0
+                fillColor: TYPE_COLORS[node.type],
+                weight: 1,
+                opacity: 0.4,
+                fillOpacity: 0.2
               }}
-              eventHandlers={{
-                click: () => setSelectedNode(node)
-              }}
+              interactive={false}
             />
-            {/* The Solid Core Node */}
+            {/* The Primary Circular Dot with Heartbeat */}
             <CircleMarker 
               center={[node.lat, node.lng]}
               radius={4}
-              className="node-core"
+              className="node-dot-heartbeat"
               pathOptions={{ 
                 color: TYPE_COLORS[node.type], 
                 fillColor: TYPE_COLORS[node.type], 
-                fillOpacity: 0.9,
-                weight: 1,
-                opacity: 1
+                fillOpacity: 1,
+                weight: 2,
+                opacity: 0.5
               }}
               eventHandlers={{
                 click: () => setSelectedNode(node)
@@ -93,13 +91,13 @@ export function NodeMap({ nodes, theme = 'dark' }: NodeMapProps) {
       <Dialog open={!!selectedNode} onOpenChange={() => setSelectedNode(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-foreground">
               <div className={`w-3 h-3 rounded-full ${selectedNode?.status === 'Online' ? 'bg-green-500' : 'bg-red-500'}`} />
               {selectedNode?.type} Node Details
             </DialogTitle>
           </DialogHeader>
           {selectedNode && (
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 text-foreground">
               <div className="grid grid-cols-2 items-center gap-4">
                 <span className="text-sm font-medium opacity-70">Node ID:</span>
                 <span className="text-sm font-mono">{selectedNode.id}</span>
