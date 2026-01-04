@@ -46,29 +46,47 @@ export function NodeMap({ nodes, theme = 'dark' }: NodeMapProps) {
         <TileLayer url={tileUrl} />
 
         {nodes.map((node) => (
-          <CircleMarker 
-            key={node.id}
-            center={[node.lat, node.lng]}
-            radius={4}
-            className="node-pulse"
-            pathOptions={{ 
-              color: TYPE_COLORS[node.type], 
-              fillColor: TYPE_COLORS[node.type], 
-              fillOpacity: 0.8,
-              weight: 2,
-              opacity: 0.4
-            }}
-            eventHandlers={{
-              click: () => setSelectedNode(node)
-            }}
-          >
-            <Popup className="md:hidden">
-              <div className="p-1 min-w-[120px]">
-                <div className="font-bold">{node.type}</div>
-                <div className="text-xs opacity-80">{node.city}</div>
-              </div>
-            </Popup>
-          </CircleMarker>
+          <div key={node.id}>
+            {/* The Outer Animated Beep Ring */}
+            <CircleMarker 
+              center={[node.lat, node.lng]}
+              radius={8}
+              className="node-beep"
+              pathOptions={{ 
+                color: TYPE_COLORS[node.type], 
+                fillColor: 'transparent',
+                weight: 2,
+                opacity: 0.6,
+                fillOpacity: 0
+              }}
+              eventHandlers={{
+                click: () => setSelectedNode(node)
+              }}
+            />
+            {/* The Solid Core Node */}
+            <CircleMarker 
+              center={[node.lat, node.lng]}
+              radius={4}
+              className="node-core"
+              pathOptions={{ 
+                color: TYPE_COLORS[node.type], 
+                fillColor: TYPE_COLORS[node.type], 
+                fillOpacity: 0.9,
+                weight: 1,
+                opacity: 1
+              }}
+              eventHandlers={{
+                click: () => setSelectedNode(node)
+              }}
+            >
+              <Popup className="md:hidden">
+                <div className="p-1 min-w-[120px]">
+                  <div className="font-bold">{node.type}</div>
+                  <div className="text-xs opacity-80">{node.city}</div>
+                </div>
+              </Popup>
+            </CircleMarker>
+          </div>
         ))}
       </MapContainer>
 

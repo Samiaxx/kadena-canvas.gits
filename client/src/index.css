@@ -75,22 +75,36 @@
   background: transparent !important;
 }
 
-/* Node Pulse Animation */
-@keyframes node-pulse {
+/* Beeping Beacon Animation */
+@keyframes beep {
   0% {
     transform: scale(1);
-    opacity: 0.8;
+    opacity: 1;
+    stroke-width: 2;
   }
   50% {
-    transform: scale(1.5);
-    opacity: 0.4;
+    transform: scale(2.5);
+    opacity: 0;
+    stroke-width: 4;
   }
   100% {
     transform: scale(1);
-    opacity: 0.8;
+    opacity: 0;
+    stroke-width: 2;
   }
 }
 
-.node-pulse {
-  animation: node-pulse 2s infinite ease-in-out;
+.node-beep {
+  transform-origin: center;
+  animation: beep 1.5s infinite ease-out;
+}
+
+/* Secondary glow for the core */
+@keyframes glow {
+  0%, 100% { opacity: 0.8; r: 4; }
+  50% { opacity: 1; r: 5; }
+}
+
+.node-core {
+  animation: glow 1.5s infinite ease-in-out;
 }
