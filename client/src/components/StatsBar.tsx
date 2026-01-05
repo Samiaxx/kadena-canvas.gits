@@ -1,21 +1,38 @@
 import { useState, useEffect } from "react";
 import { NetworkStats, MOCK_STATS } from "@/data/mockData";
-import { Hash, Zap, Activity, Clock, Server } from "lucide-react";
+import { Hash, Zap, Activity, Clock, Server, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function StatsBar() {
   const [networkHeight, setNetworkHeight] = useState<number | null>(null);
+  const [latestBlock, setLatestBlock] = useState<{ height: number; hash: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchKadenaData = async () => {
     try {
-      const res = await fetch("https://api.chainweb.com/chainweb/0.0/mainnet01/cut");
-      if (res.ok) {
-        const data = await res.json();
-        setNetworkHeight(data.height);
-        setLastUpdated(new Date());
+      // 1. Fetch Cut (Network Height)
+      const cutRes = await fetch("https://api.chainweb.com/chainweb/0.0/mainnet01/cut");
+      if (cutRes.ok) {
+        const cutData = await cutRes.json();
+        setNetworkHeight(cutData.height);
       }
+
+      // 2. Fetch Latest Block from Chain 0 (Example chain)
+      const blockRes = await fetch("https://api.chainweb.com/chainweb/0.0/mainnet01/chain/0/block?limit=1");
+      if (blockRes.ok) {
+        const blockData = await blockRes.json();
+        // The block endpoint usually returns an items array or a block object
+        const block = blockData?.items?.[0] || blockData?.[0] || blockData;
+        if (block) {
+          setLatestBlock({
+            height: block.header?.height || block.height,
+            hash: (block.header?.hash || block.hash || "").substring(0, 12) + "..."
+          });
+        }
+      }
+      
+      setLastUpdated(new Date());
     } catch (err) {
       console.error("Failed to fetch Kadena data:", err);
     } finally {
@@ -31,13 +48,20 @@ export function StatsBar() {
 
   return (
     <div className="w-full flex flex-col gap-2 mb-6">
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard 
           label="Network Height" 
           value={networkHeight ? networkHeight.toLocaleString() : "..."} 
           icon={<Hash className="w-4 h-4 text-purple-400" />}
           isLoading={isLoading}
           subtext={`Last updated: ${lastUpdated.toLocaleTimeString()}`}
+        />
+        <StatCard 
+          label="Latest Block (Ch0)" 
+          value={latestBlock ? latestBlock.height.toLocaleString() : "..."} 
+          icon={<Layers className="w-4 h-4 text-pink-400" />}
+          isLoading={isLoading}
+          subtext={latestBlock?.hash || "Fetching hash..."}
         />
         <StatCard 
           label="Current TPS" 
@@ -88,11 +112,11 @@ function StatCard({ label, value, icon, trend, isLoading, subtext }: {
           {isLoading ? (
             <div className="h-8 w-24 bg-muted animate-pulse rounded" />
           ) : (
-            <span className="text-2xl font-display font-bold text-foreground">{value}</span>
+            <span className="text-xl font-display font-bold text-foreground">{value}</span>
           )}
-          {trend && <span className="text-xs text-green-500 font-mono">{trend}</span>}
+          {trend && <span className="text-[10px] text-green-500 font-mono">{trend}</span>}
         </div>
-        {subtext && <span className="text-[10px] text-muted-foreground font-mono">{subtext}</span>}
+        {subtext && <span className="text-[9px] text-muted-foreground font-mono truncate">{subtext}</span>}
       </div>
     </motion.div>
   );
