@@ -1,71 +1,85 @@
-import { Node } from '@/data/mockData';
-import { useEffect, useState } from 'react';
+import { Node } from "@/data/mockData";
+import { useEffect, useState } from "react";
 
-export interface ChainwebCut {
-  instance: string;
+interface ChainwebCut {
   hashes: Record<string, { height: number; hash: string }>;
-  origin: null;
-  weight: string;
-  height: number;
 }
 
 export function useLiveKadenaData(mockNodes: Node[]) {
   const [nodes, setNodes] = useState<Node[]>(mockNodes);
-  const [cut, setCut] = useState<ChainwebCut | null>(null);
-  const [latestBlock, setLatestBlock] = useState<any>(null);
+  const [networkHeight, setNetworkHeight] = useState<number | null>(null);
+  const [latestBlockHeight, setLatestBlockHeight] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchKadenaData = async () => {
-      try {
-        // 1. Fetch Cut (Network Height)
-        const cutRes = await fetch('https://api.chainweb.com/chainweb/0.0/mainnet01/cut');
-        if (cutRes.ok) {
-          const cutData = await cutRes.json();
-          setCut(cutData);
-        }
+  const fetchKadenaData = async () => {
+    try {
+      // 1️⃣ Fetch network cut
+      const cutRes = await fetch(
+        "https://api.chainweb.com/chainweb/0.0/mainnet01/cut"
+      );
+      if (!cutRes.ok) throw new Error("Failed to fetch cut");
 
-        // 2. Fetch Latest Block from Chain 0
-        const blockRes = await fetch('https://api.chainweb.com/chainweb/0.0/mainnet01/chain/0/block?limit=1');
-        if (blockRes.ok) {
-          const blockData = await blockRes.json();
-          // The endpoint returns an array or object depending on headers, 
-          // usually a payload with 'items' or similar in production APIs.
-          setLatestBlock(blockData?.items?.[0] || blockData);
-        }
+      const cutData: ChainwebCut = await cutRes.json();
 
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching Kadena data:', error);
-        setIsLoading(false);
+      const heights = Object.values(cutData.hashes).map(h => h.height);
+      const maxHeight = Math.max(...heights);
+
+      setNetworkHeight(maxHeight);
+
+      // 2️⃣ Fetch latest block (chain 0)
+      const blockRes = await fetch(
+        "https://api.chainweb.com/chainweb/0.0/mainnet01/chain/0/block"
+      );
+      if (!blockRes.ok) throw new Error("Failed to fetch block");
+
+      const blockData = await blockRes.json();
+
+      // block height lives here
+      if (blockData?.height) {
+        setLatestBlockHeight(blockData.height);
       }
-    };
 
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Chainweb fetch failed:", err);
+      setNetworkHeight(null);
+      setLatestBlockHeight(null);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchKadenaData();
-    const interval = setInterval(fetchKadenaData, 30000); // Update every 30s
-
+    const interval = setInterval(fetchKadenaData, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  // 🔵 Simulated node activity (this part is fine)
   useEffect(() => {
-    // Simulate node flickering but based on real timing intervals
     const nodeInterval = setInterval(() => {
-      setNodes(currentNodes => 
-        currentNodes.map(node => {
-          if (Math.random() > 0.98) {
-            return {
-              ...node,
-              status: Math.random() > 0.02 ? 'Online' : 'Offline',
-              uptime: Math.min(100, node.uptime + (Math.random() > 0.5 ? 0.01 : -0.01))
-            };
-          }
-          return node;
-        })
+      setNodes(current =>
+        current.map(node =>
+          Math.random() > 0.98
+            ? {
+                ...node,
+                status: Math.random() > 0.02 ? "Online" : "Offline",
+                uptime: Math.min(
+                  100,
+                  Math.max(0, node.uptime + (Math.random() > 0.5 ? 0.01 : -0.01))
+                ),
+              }
+            : node
+        )
       );
     }, 10000);
 
     return () => clearInterval(nodeInterval);
   }, []);
 
-  return { nodes, cut, latestBlock, isLoading };
+  return {
+    nodes,
+    networkHeight,
+    latestBlockHeight,
+    isLoading,
+  };
 }
