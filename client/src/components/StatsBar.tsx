@@ -1,32 +1,10 @@
-import { useState, useEffect } from "react";
 import { Hash, Zap, Activity, Clock, Server, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLiveKadenaData } from "@/hooks/useLiveKadenaData";
 import { MOCK_NODES } from "@/data/mockData";
 
 export function StatsBar() {
-  const { networkHeight, latestBlockHeight, isLoading } = useLiveKadenaData(MOCK_NODES);
-  
-  // Real-time calculated metrics or derived from live data
-  // For the others without direct API endpoints yet, we use small drifts to feel "live"
-  const [liveStats, setLiveStats] = useState({
-    tps: 12540,
-    tx24h: 4529302,
-    blockTime: 1.5,
-    nodes: 843
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveStats(prev => ({
-        ...prev,
-        tps: prev.tps + Math.floor((Math.random() - 0.5) * 50),
-        tx24h: prev.tx24h + Math.floor(Math.random() * 10),
-        nodes: prev.nodes + (Math.random() > 0.9 ? (Math.random() > 0.5 ? 1 : -1) : 0)
-      }));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const { networkHeight, latestBlockHeight, stats, isLoading } = useLiveKadenaData(MOCK_NODES);
 
   return (
     <div className="w-full flex flex-col gap-2 mb-6">
@@ -45,24 +23,28 @@ export function StatsBar() {
         />
         <StatCard 
           label="Current TPS" 
-          value={liveStats.tps.toLocaleString()} 
+          value={stats.tps > 0 ? stats.tps.toLocaleString() : "..."} 
           icon={<Zap className="w-4 h-4 text-yellow-400" />}
           trend="+2.4%"
+          isLoading={isLoading && stats.tps === 0}
         />
         <StatCard 
           label="24h Transactions" 
-          value={liveStats.tx24h.toLocaleString()} 
+          value={stats.tx24h > 0 ? stats.tx24h.toLocaleString() : "..."} 
           icon={<Activity className="w-4 h-4 text-blue-400" />}
+          isLoading={isLoading && stats.tx24h === 0}
         />
         <StatCard 
           label="Avg Block Time" 
-          value={`${liveStats.blockTime}s`} 
+          value={`${stats.avgBlockTime}s`} 
           icon={<Clock className="w-4 h-4 text-green-400" />}
+          isLoading={isLoading}
         />
         <StatCard 
           label="Active Nodes" 
-          value={liveStats.nodes.toLocaleString()} 
+          value={stats.activeNodes > 0 ? stats.activeNodes.toLocaleString() : "..."} 
           icon={<Server className="w-4 h-4 text-primary" />}
+          isLoading={isLoading && stats.activeNodes === 0}
         />
       </div>
     </div>
