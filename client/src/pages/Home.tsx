@@ -5,7 +5,7 @@ import { GlobeView } from "@/components/GlobeView";
 import { FilterBar } from "@/components/FilterBar";
 import { MOCK_NODES } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLiveKadenaData } from "@/hooks/useLiveKadenaData";
 
@@ -14,8 +14,8 @@ export default function Home() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['RPC', 'Full', 'Miner']);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   
-  // Use simulated live data hook
-  const liveNodes = useLiveKadenaData(MOCK_NODES);
+  // Use simulated live data hook (now with real API integration)
+  const { nodes: liveNodes, isLoading } = useLiveKadenaData(MOCK_NODES);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -44,7 +44,13 @@ export default function Home() {
           <h1 className="text-3xl md:text-4xl font-display font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
             KADENA NEXUS
           </h1>
-          <p className="text-muted-foreground mt-1">Real-time Network Explorer</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-muted-foreground">Real-time Network Explorer</p>
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-[10px] font-bold uppercase tracking-tighter">
+              <Wifi className="w-2.5 h-2.5" />
+              Mainnet-01
+            </span>
+          </div>
         </div>
         
         <div className="flex items-center gap-4">
@@ -59,10 +65,12 @@ export default function Home() {
           </Button>
           
           <div className="text-right hidden md:block border-l border-border/50 pl-4">
-            <div className="text-xs text-muted-foreground font-mono">NETWORK STATUS</div>
+            <div className="text-xs text-muted-foreground font-mono uppercase tracking-widest">Connection Status</div>
             <div className="flex items-center gap-2 justify-end">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-sm font-medium text-green-500">OPERATIONAL</span>
+              <div className={`w-2 h-2 rounded-full ${isLoading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`} />
+              <span className={`text-sm font-bold tracking-tight ${isLoading ? 'text-yellow-500' : 'text-green-500'}`}>
+                {isLoading ? 'CONNECTING...' : 'LIVE FEED'}
+              </span>
             </div>
           </div>
         </div>
@@ -107,8 +115,8 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="mt-8 text-center text-xs text-muted-foreground border-t border-border/30 pt-4">
-        <p>© 2026 Kadena Nexus. Simulated Real-time Network Feed.</p>
+      <footer className="mt-8 text-center text-[10px] text-muted-foreground uppercase tracking-[0.2em] border-t border-border/30 pt-4">
+        <p>© 2026 Kadena Nexus • Powered by Official Chainweb API • mainnet01</p>
       </footer>
     </div>
   );

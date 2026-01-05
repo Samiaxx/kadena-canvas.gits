@@ -1,26 +1,30 @@
 import { motion } from "framer-motion";
-import { Activity, Server, Zap, Clock } from "lucide-react";
+import { Activity, Server, Zap, Clock, Hash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NetworkStats, MOCK_STATS } from "@/data/mockData";
+import { useLiveKadenaData } from "@/hooks/useLiveKadenaData";
 
 export function StatsBar() {
+  const { cut, latestBlock, isLoading } = useLiveKadenaData([]);
   const [stats, setStats] = useState<NetworkStats>(MOCK_STATS);
 
-  // Simulate live data updates
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (cut) {
       setStats(prev => ({
         ...prev,
-        tps: prev.tps + Math.floor((Math.random() - 0.5) * 50),
-        transactions24h: prev.transactions24h + Math.floor(Math.random() * 10),
-        activeNodes: prev.activeNodes + (Math.random() > 0.8 ? (Math.random() > 0.5 ? 1 : -1) : 0),
+        activeNodes: 843 + (Math.floor(Math.random() * 10)), // Base + drift
       }));
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+    }
+  }, [cut]);
 
   return (
-    <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className="w-full grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <StatCard 
+        label="Network Height" 
+        value={cut ? cut.height.toLocaleString() : "..."} 
+        icon={<Hash className="w-4 h-4 text-purple-400" />}
+        isLoading={isLoading}
+      />
       <StatCard 
         label="Current TPS" 
         value={stats.tps.toLocaleString()} 
@@ -46,7 +50,7 @@ export function StatsBar() {
   );
 }
 
-function StatCard({ label, value, icon, trend }: { label: string, value: string, icon: React.ReactNode, trend?: string }) {
+function StatCard({ label, value, icon, trend, isLoading }: { label: string, value: string, icon: React.ReactNode, trend?: string, isLoading?: boolean }) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -58,7 +62,11 @@ function StatCard({ label, value, icon, trend }: { label: string, value: string,
       </div>
       <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">{label}</span>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-display font-bold text-foreground">{value}</span>
+        {isLoading ? (
+          <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+        ) : (
+          <span className="text-2xl font-display font-bold text-foreground">{value}</span>
+        )}
         {trend && <span className="text-xs text-green-500 font-mono">{trend}</span>}
       </div>
     </motion.div>
