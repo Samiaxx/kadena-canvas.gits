@@ -7,11 +7,15 @@ import { MOCK_NODES } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLiveKadenaData } from "@/hooks/useLiveKadenaData";
 
 export default function Home() {
   const [viewMode, setViewMode] = useState<'map' | 'globe'>('map');
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['RPC', 'Full', 'Miner']);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  
+  // Use simulated live data hook
+  const liveNodes = useLiveKadenaData(MOCK_NODES);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -30,8 +34,8 @@ export default function Home() {
   };
 
   const filteredNodes = useMemo(() => {
-    return MOCK_NODES.filter(node => selectedTypes.includes(node.type));
-  }, [selectedTypes]);
+    return liveNodes.filter(node => selectedTypes.includes(node.type));
+  }, [liveNodes, selectedTypes]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col p-4 md:p-8 max-w-[1600px] mx-auto transition-colors duration-300">
@@ -49,6 +53,7 @@ export default function Home() {
             size="icon"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="rounded-full"
+            data-testid="button-theme-toggle"
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
@@ -103,7 +108,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-8 text-center text-xs text-muted-foreground border-t border-border/30 pt-4">
-        <p>© 2026 Kadena Nexus. All data is currently simulated for prototype demonstration.</p>
+        <p>© 2026 Kadena Nexus. Simulated Real-time Network Feed.</p>
       </footer>
     </div>
   );
