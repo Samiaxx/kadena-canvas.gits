@@ -34,7 +34,7 @@ export default function Home() {
   };
 
   const filteredNodes = useMemo(() => {
-    return liveNodes.filter(node => selectedTypes.includes(node.type));
+    return (liveNodes || []).filter(node => selectedTypes.includes(node.type));
   }, [liveNodes, selectedTypes]);
 
   return (

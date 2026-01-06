@@ -1,91 +1,110 @@
-import { Hash, Zap, Activity, Clock, Server, Layers, Cpu } from "lucide-react";
+import { Hash, Zap, Activity, Clock, Server } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLiveKadenaData } from "@/hooks/useLiveKadenaData";
-import { MOCK_NODES } from "@/data/mockData";
 
 export function StatsBar() {
-  const { networkHeight, latestBlockHeight, stats, isLoading } = useLiveKadenaData(MOCK_NODES);
+  const {
+    networkHeight,
+    activeChains,
+    avgBlockTime,
+    tps,
+    tx24h,
+    isLoading,
+    live,
+    stale,
+  } = useLiveKadenaData();
 
   return (
     <div className="w-full flex flex-col gap-2 mb-6">
-      <div className="grid grid-cols-2 lg:grid-cols-7 gap-4">
-        <StatCard 
-          label="Network Height" 
-          value={networkHeight ? networkHeight.toLocaleString() : "..."} 
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <StatCard
+          label="Network Height"
+          value={networkHeight ? networkHeight.toLocaleString() : "—"}
           icon={<Hash className="w-4 h-4 text-purple-400" />}
-          isLoading={isLoading && !networkHeight}
+          isLoading={isLoading}
         />
-        <StatCard 
-          label="Latest Block (Ch0)" 
-          value={latestBlockHeight ? latestBlockHeight.toLocaleString() : "..."} 
-          icon={<Layers className="w-4 h-4 text-pink-400" />}
-          isLoading={isLoading && !latestBlockHeight}
+
+        <StatCard
+          label="Active Chains"
+          value={activeChains ? activeChains.toString() : "—"}
+          icon={<Server className="w-4 h-4 text-pink-400" />}
+          isLoading={isLoading}
         />
-        <StatCard 
-          label="Current TPS" 
-          value={stats.tps > 0 ? stats.tps.toLocaleString() : "..."} 
+
+        <StatCard
+          label="Current TPS"
+          value={tps ? tps.toLocaleString() : "—"}
           icon={<Zap className="w-4 h-4 text-yellow-400" />}
-          trend="+2.4%"
-          isLoading={isLoading && stats.tps === 0}
+          isLoading={isLoading}
         />
-        <StatCard 
-          label="24h Transactions" 
-          value={stats.tx24h > 0 ? stats.tx24h.toLocaleString() : "..."} 
+
+        <StatCard
+          label="24h Transactions"
+          value={tx24h ? tx24h.toLocaleString() : "—"}
           icon={<Activity className="w-4 h-4 text-blue-400" />}
-          isLoading={isLoading && stats.tx24h === 0}
+          isLoading={isLoading}
         />
-        <StatCard 
-          label="Avg Block Time" 
-          value={`${stats.avgBlockTime}s`} 
+
+        <StatCard
+          label="Avg Block Time"
+          value={avgBlockTime ? `${avgBlockTime}s` : "—"}
           icon={<Clock className="w-4 h-4 text-green-400" />}
           isLoading={isLoading}
         />
-        <StatCard 
-          label="Active Nodes" 
-          value={stats.activeNodes > 0 ? stats.activeNodes.toLocaleString() : "..."} 
+
+        <StatCard
+          label="Network Status"
+          value={live ? "LIVE" : stale ? "STALE" : "OFFLINE"}
           icon={<Server className="w-4 h-4 text-primary" />}
-          isLoading={isLoading && stats.activeNodes === 0}
-        />
-        <StatCard 
-          label="Network Hashrate" 
-          value={stats.hashrate} 
-          icon={<Cpu className="w-4 h-4 text-orange-400" />}
-          isLoading={isLoading}
+          badge={live ? "live" : "stale"}
         />
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value, icon, trend, isLoading, subtext }: { 
-  label: string, 
-  value: string, 
-  icon: React.ReactNode, 
-  trend?: string, 
-  isLoading?: boolean,
-  subtext?: string
+function StatCard({
+  label,
+  value,
+  icon,
+  isLoading,
+  badge,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  isLoading?: boolean;
+  badge?: "live" | "stale";
 }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-panel p-4 rounded-lg flex flex-col relative overflow-hidden group border border-border/50"
+      className="glass-panel p-4 rounded-lg flex flex-col relative overflow-hidden border border-border/50"
     >
-      <div className="absolute top-0 right-0 p-3 opacity-50 group-hover:opacity-100 transition-opacity">
-        {icon}
-      </div>
-      <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">{label}</span>
-      <div className="flex flex-col gap-1">
-        <div className="flex items-baseline gap-2">
-          {isLoading ? (
-            <div className="h-8 w-24 bg-muted animate-pulse rounded" />
-          ) : (
-            <span className="text-xl font-display font-bold text-foreground">{value}</span>
-          )}
-          {trend && <span className="text-[10px] text-green-500 font-mono">{trend}</span>}
-        </div>
-        {subtext && <span className="text-[9px] text-muted-foreground font-mono truncate">{subtext}</span>}
-      </div>
+      <div className="absolute top-0 right-0 p-3 opacity-50">{icon}</div>
+
+      <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">
+        {label}
+      </span>
+
+      {isLoading ? (
+        <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+      ) : (
+        <span className="text-xl font-display font-bold text-foreground">
+          {value}
+        </span>
+      )}
+
+      {badge && (
+        <span
+          className={`mt-1 text-[10px] font-mono ${
+            badge === "live" ? "text-green-500" : "text-yellow-500"
+          }`}
+        >
+          {badge.toUpperCase()}
+        </span>
+      )}
     </motion.div>
   );
 }

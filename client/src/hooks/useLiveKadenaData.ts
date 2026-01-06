@@ -6,7 +6,7 @@ interface ChainwebCut {
 }
 
 export function useLiveKadenaData(mockNodes: Node[]) {
-  const [nodes, setNodes] = useState<Node[]>(mockNodes);
+  const [nodes, setNodes] = useState<Node[]>(mockNodes || []);
   const [networkHeight, setNetworkHeight] = useState<number | null>(null);
   const [latestBlockHeight, setLatestBlockHeight] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,8 +21,6 @@ export function useLiveKadenaData(mockNodes: Node[]) {
 
   const fetchKadenaData = async () => {
     try {
-      // Use a proxy or different endpoint if direct fetch fails due to CORS in some environments
-      // For this mockup, we'll try direct but provide a fallback if it's a CORS issue in the iframe
       const cutRes = await fetch("https://api.chainweb.com/chainweb/0.0/mainnet01/cut");
       
       if (!cutRes.ok) {
@@ -54,8 +52,6 @@ export function useLiveKadenaData(mockNodes: Node[]) {
     } catch (err) {
       console.error("Chainweb fetch failed, using fallback live simulation:", err);
       
-      // Fallback: If the API is blocked by CORS or down, 
-      // we still provide "live" looking data so the dashboard works
       setNetworkHeight(prev => prev || 4258900 + Math.floor(Math.random() * 100));
       setLatestBlockHeight(prev => prev || 4258890 + Math.floor(Math.random() * 100));
       setStats({
@@ -71,14 +67,16 @@ export function useLiveKadenaData(mockNodes: Node[]) {
 
   useEffect(() => {
     fetchKadenaData();
-    const interval = setInterval(fetchKadenaData, 10000); // Faster refresh for "live" feel
+    const interval = setInterval(fetchKadenaData, 10000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
+    if (!nodes || nodes.length === 0) return;
+
     const nodeInterval = setInterval(() => {
       setNodes(current =>
-        current.map(node =>
+        (current || []).map(node =>
           Math.random() > 0.98
             ? {
                 ...node,
@@ -94,10 +92,10 @@ export function useLiveKadenaData(mockNodes: Node[]) {
     }, 5000);
 
     return () => clearInterval(nodeInterval);
-  }, []);
+  }, [nodes?.length]);
 
   return {
-    nodes,
+    nodes: nodes || [],
     networkHeight,
     latestBlockHeight,
     stats,
