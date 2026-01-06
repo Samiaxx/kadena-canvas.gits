@@ -1,3 +1,4 @@
+import { Node } from "@/data/mockData";
 import { useEffect, useState } from "react";
 
 const CHAIN_COUNT = 20;
@@ -11,11 +12,14 @@ interface BlockHeader {
   creationTime: number;
 }
 
-export function useLiveKadenaData() {
+export function useLiveKadenaData(mockNodes: Node[]) {
+  const [nodes, setNodes] = useState<Node[]>(mockNodes || []);
   const [networkHeight, setNetworkHeight] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [stats, setStats] = useState({
+    tps: null as number | null,
+    tx24h: null as number | null,
     activeChains: CHAIN_COUNT,
     avgBlockTime: null as number | null,
     status: "LIVE" as "LIVE" | "OFFLINE"
@@ -23,23 +27,24 @@ export function useLiveKadenaData() {
 
   const fetchKadenaData = async () => {
     try {
-      // Network height (authoritative)
+      // --- NETWORK HEIGHT ---
       const cutRes = await fetch(`${API_BASE}/chainweb/0.0/mainnet01/cut`);
       if (!cutRes.ok) throw new Error("Cut fetch failed");
 
       const cut: CutResponse = await cutRes.json();
       const heights = Object.values(cut.hashes).map(h => h.height);
-      setNetworkHeight(Math.max(...heights));
+      const maxHeight = Math.max(...heights);
+      setNetworkHeight(maxHeight);
 
-      // Avg block time (chain 0 sample)
-      const blockRes = await fetch(
+      // --- AVG BLOCK TIME (chain 0 sample) ---
+      const blocksRes = await fetch(
         `${API_BASE}/chainweb/0.0/mainnet01/chain/0/pact/api/v1/block/headers?limit=2`
       );
 
       let avgBlockTime: number | null = null;
 
-      if (blockRes.ok) {
-        const blocks: BlockHeader[] = await blockRes.json();
+      if (blocksRes.ok) {
+        const blocks: BlockHeader[] = await blocksRes.json();
         if (blocks.length === 2) {
           avgBlockTime = Math.abs(
             blocks[0].creationTime - blocks[1].creationTime
@@ -48,6 +53,8 @@ export function useLiveKadenaData() {
       }
 
       setStats({
+        tps: null,            // not faked
+        tx24h: null,          // not faked
         activeChains: CHAIN_COUNT,
         avgBlockTime,
         status: "LIVE"
@@ -71,6 +78,7 @@ export function useLiveKadenaData() {
   }, []);
 
   return {
+    nodes,
     networkHeight,
     stats,
     isLoading
