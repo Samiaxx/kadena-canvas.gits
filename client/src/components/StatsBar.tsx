@@ -1,4 +1,4 @@
-import { Hash, Zap, Activity, Clock, Server, Layers } from "lucide-react";
+import { Hash, Zap, Activity, Clock, Server, Layers, Cpu } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLiveKadenaData } from "@/hooks/useLiveKadenaData";
 import { MOCK_NODES } from "@/data/mockData";
@@ -8,7 +8,7 @@ export function StatsBar() {
 
   return (
     <div className="w-full flex flex-col gap-2 mb-6">
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-7 gap-4">
         <StatCard 
           label="Network Height" 
           value={networkHeight ? networkHeight.toLocaleString() : "..."} 
@@ -45,6 +45,12 @@ export function StatsBar() {
           value={stats.activeNodes > 0 ? stats.activeNodes.toLocaleString() : "..."} 
           icon={<Server className="w-4 h-4 text-primary" />}
           isLoading={isLoading && stats.activeNodes === 0}
+        />
+        <StatCard 
+          label="Network Hashrate" 
+          value={stats.hashrate} 
+          icon={<Cpu className="w-4 h-4 text-orange-400" />}
+          isLoading={isLoading}
         />
       </div>
     </div>

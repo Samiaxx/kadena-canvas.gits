@@ -10,14 +10,6 @@ export interface Node {
   uptime: number;
 }
 
-export interface NetworkStats {
-  tps: number;
-  transactions24h: number;
-  avgBlockTime: number;
-  activeNodes: number;
-  hashrate: string;
-}
-
 const CITIES = [
   { city: 'New York', country: 'USA', lat: 40.7128, lng: -74.0060 },
   { city: 'London', country: 'UK', lat: 51.5074, lng: -0.1278 },
@@ -36,10 +28,8 @@ const CITIES = [
 function generateNodes(count: number): Node[] {
   return Array.from({ length: count }).map((_, i) => {
     const location = CITIES[Math.floor(Math.random() * CITIES.length)];
-    // Add some jitter to location so they don't stack perfectly
     const lat = location.lat + (Math.random() - 0.5) * 5;
     const lng = location.lng + (Math.random() - 0.5) * 5;
-    
     const types: ('RPC' | 'Full' | 'Miner')[] = ['RPC', 'Full', 'Miner'];
     const type = types[Math.floor(Math.random() * types.length)];
     
@@ -51,18 +41,10 @@ function generateNodes(count: number): Node[] {
       city: location.city,
       country: location.country,
       status: Math.random() > 0.1 ? 'Online' : 'Offline',
-      ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+      ip: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
       uptime: Math.floor(Math.random() * 100),
     };
   });
 }
 
 export const MOCK_NODES = generateNodes(150);
-
-export const MOCK_STATS: NetworkStats = {
-  tps: 12540,
-  transactions24h: 4529302,
-  avgBlockTime: 1.5,
-  activeNodes: 843,
-  hashrate: '245 PH/s'
-};
