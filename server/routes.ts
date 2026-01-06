@@ -1,16 +1,31 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { Router } from "express";
+import { getKadenaNetworkStats } from "./services/kadenaStats";
 
-export async function registerRoutes(
-  httpServer: Server,
-  app: Express
-): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+const router = Router();
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+// ─────────────────────────────────────
+// Kadena Network Stats (REAL DATA)
+// ─────────────────────────────────────
+router.get("/kadena/stats", async (_req, res) => {
+  try {
+    const stats = await getKadenaNetworkStats();
+    res.json(stats);
+  } catch (error) {
+    console.error("Kadena stats error:", error);
+    res.status(500).json({
+      error: "Failed to fetch Kadena network stats"
+    });
+  }
+});
 
-  return httpServer;
-}
+// ─────────────────────────────────────
+// Default API Route
+// ─────────────────────────────────────
+router.get("/", (_req, res) => {
+  res.json({
+    name: "Kadena Nexus API",
+    status: "running"
+  });
+});
+
+export default router;
