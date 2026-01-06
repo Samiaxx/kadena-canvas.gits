@@ -1,82 +1,94 @@
-export const config = {
-  runtime: "nodejs"
-};
-
 const CHAIN_COUNT = 20;
 const BASE =
-  "https://us-e1.chainweb.com/chainweb/0.0/mainnet01/chain";
+  "https://api.chainweb.com/chainweb/0.0/mainnet01/chain";
 
 type BlockHeader = {
   height: number;
   creationTime: number;
+  txCount?: number;
 };
 
+/**
+ * Fetch block headers with timeout + safe failure
+ */
 async function fetchHeaders(chainId: number, limit: number) {
-  const res = await fetch(
-    `${BASE}/${chainId}/pact/api/v1/block/headers?limit=${limit}`,
-    { cache: "no-store" }
-  );
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
 
-  if (!res.ok) {
-    throw new Error(`Chain ${chainId} failed`);
+  try {
+    const res = await fetch(
+      `${BASE}/${chainId}/pact/api/v1/block/headers?limit=${limit}`,
+      { signal: controller.signal }
+    );
+
+    if (!res.ok) return null;
+    return (await res.json()) as BlockHeader[];
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return (await res.json()) as BlockHeader[];
 }
 
-export default async function handler(
-  _req: Request,
-  res: any
-) {
-  try {
-    const WINDOW_SECONDS = 30;
+/**
+ * Get Kadena network stats
+ * Allows partial success across chains
+ */
+export async function getKadenaNetworkStats() {
+  const WINDOW_SECONDS = 30;
 
-    let totalBlocks = 0;
-    const blockTimes: number[] = [];
-    const heights: number[] = [];
+  let totalTx = 0;
+  let successfulChains = 0;
 
-    for (let chain = 0; chain < CHAIN_COUNT; chain++) {
-      try {
-        const blocks = await fetchHeaders(chain, 5);
+  const blockTimes: number[] = [];
+  const heights: number[] = [];
 
-        if (blocks.length >= 2) {
-          blockTimes.push(
-            blocks[0].creationTime - blocks[1].creationTime
-          );
-        }
+  for (let chain = 0; chain < CHAIN_COUNT; chain++) {
+    const blocks = await fetchHeaders(chain, 5);
 
-        totalBlocks += blocks.length;
-        heights.push(blocks[0].height);
-      } catch {
-        continue;
+    if (!blocks || blocks.length < 2) continue;
+
+    successfulChains++;
+
+    // Block time
+    blockTimes.push(
+      blocks[0].creationTime - blocks[1].creationTime
+    );
+
+    // Transactions
+    blocks.forEach((b) => {
+      if (typeof b.txCount === "number") {
+        totalTx += b.txCount;
       }
-    }
-
-    if (blockTimes.length === 0) {
-      return res.status(503).json({
-        error: "No Kadena chain data available"
-      });
-    }
-
-    const EST_TX_PER_BLOCK = 10;
-    const tps =
-      (totalBlocks * EST_TX_PER_BLOCK) / WINDOW_SECONDS;
-
-    return res.status(200).json({
-      tps: Number(tps.toFixed(2)),
-      avgBlockTime: Number(
-        (
-          blockTimes.reduce((a, b) => a + b, 0) /
-          blockTimes.length
-        ).toFixed(2)
-      ),
-      networkHeight: Math.max(...heights),
-      activeChains: blockTimes.length,
-      status: "LIVE"
     });
-  } catch (err) {
-    return res.status(500).json({
-      error: "Failed to fetch Kadena network stats"
-    });
+
+    // Height
+    if (typeof blocks[0].height === "number") {
+      heights.push(blocks[0].height);
+    }
   }
+
+  // No data at all
+  if (successfulChains === 0) {
+    return {
+      tps: null,
+      avgBlockTime: null,
+      networkHeight: null,
+      activeChains: 0,
+      status: "OFFLINE",
+    };
+  }
+
+  return {
+    tps: Number((totalTx / WINDOW_SECONDS).toFixed(2)),
+    avgBlockTime: Number(
+      (
+        blockTimes.reduce((a, b) => a + b, 0) /
+        blockTimes.length
+      ).toFixed(2)
+    ),
+    networkHeight: Math.max(...heights),
+    activeChains: successfulChains,
+    status: successfulChains === CHAIN_COUNT ? "LIVE" : "PARTIAL",
+  };
 }
