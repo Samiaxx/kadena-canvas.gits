@@ -1,10 +1,7 @@
-export const config = {
-  runtime: "edge"
-};
+export const runtime = "nodejs";
 
 const CHAIN_COUNT = 20;
-const BASE =
-  "https://api.chainweb-community.org/chainweb/0.0/mainnet01/chain";
+const BASE = "https://api.chainweb-community.org";
 
 type BlockHeader = {
   height: number;
@@ -12,29 +9,33 @@ type BlockHeader = {
   txCount?: number;
 };
 
-async function fetchHeaders(chainId: number, limit: number) {
+async function fetchHeaders(chainId: number, limit = 2): Promise<BlockHeader[]> {
   const res = await fetch(
-    `${BASE}/${chainId}/pact/api/v1/block/headers?limit=${limit}`
+    `${BASE}/chainweb/0.0/mainnet01/chain/${chainId}/pact/api/v1/block/headers?limit=${limit}`,
+    {
+      headers: {
+        accept: "application/json",
+      },
+      cache: "no-store",
+    }
   );
 
   if (!res.ok) {
-    throw new Error(`Failed to fetch chain ${chainId}`);
+    throw new Error(`Chain ${chainId} failed`);
   }
 
-  return (await res.json()) as BlockHeader[];
+  return res.json();
 }
 
 export default async function handler() {
   try {
-    const WINDOW_SECONDS = 30;
-
     let totalTx = 0;
-    const blockTimes: number[] = [];
-    const heights: number[] = [];
+    let blockTimes: number[] = [];
+    let heights: number[] = [];
 
-    await Promise.all(
-      Array.from({ length: CHAIN_COUNT }, async (_, chain) => {
-        const blocks = await fetchHeaders(chain, 10);
+    for (let chain = 0; chain < CHAIN_COUNT; chain++) {
+      try {
+        const blocks = await fetchHeaders(chain, 2);
 
         if (blocks.length >= 2) {
           blockTimes.push(
@@ -42,38 +43,43 @@ export default async function handler() {
           );
         }
 
-        blocks.forEach((b) => {
-          if (b.txCount) totalTx += b.txCount;
-        });
+        for (const b of blocks) {
+          if (typeof b.txCount === "number") {
+            totalTx += b.txCount;
+          }
+        }
 
         if (blocks[0]?.height) {
           heights.push(blocks[0].height);
         }
-      })
-    );
+      } catch {
+        // Skip unreachable chains
+      }
+    }
+
+    if (!heights.length) {
+      throw new Error("No chain data available");
+    }
 
     return new Response(
       JSON.stringify({
-        tps: Number((totalTx / WINDOW_SECONDS).toFixed(2)),
-        avgBlockTime: Number(
-          (
-            blockTimes.reduce((a, b) => a + b, 0) /
-            blockTimes.length
-          ).toFixed(2)
-        ),
         networkHeight: Math.max(...heights),
         activeChains: CHAIN_COUNT,
-        status: "LIVE"
+        tps: Number((totalTx / 30).toFixed(2)),
+        avgBlockTime: Number(
+          (blockTimes.reduce((a, b) => a + b, 0) / blockTimes.length).toFixed(2)
+        ),
+        status: "LIVE",
       }),
       {
-        headers: { "Content-Type": "application/json" }
+        headers: {
+          "content-type": "application/json",
+        },
       }
     );
-  } catch (err) {
+  } catch (e: any) {
     return new Response(
-      JSON.stringify({
-        error: "Failed to fetch Kadena network stats"
-      }),
+      JSON.stringify({ error: e.message }),
       { status: 500 }
     );
   }
