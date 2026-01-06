@@ -1,36 +1,36 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+export const runtime = "nodejs";
 
 const CHAIN_COUNT = 20;
-const BASE =
-  "https://api.chainweb.com/chainweb/0.0/mainnet01/chain";
+const BASES = [
+  "https://api.chainweb.com",
+  "https://nodes.kadena.ws"
+];
 
-type BlockHeader = {
-  height: number;
-  creationTime: number;
-  txCount?: number;
-};
-
-async function fetchHeaders(chainId: number, limit: number) {
-  const res = await fetch(
-    `${BASE}/${chainId}/pact/api/v1/block/headers?limit=${limit}`,
-    { signal: AbortSignal.timeout(8000) }
-  );
-
-  if (!res.ok) throw new Error("fetch failed");
-  return (await res.json()) as BlockHeader[];
+async function fetchWithFallback(url: string) {
+  for (const base of BASES) {
+    try {
+      const res = await fetch(url.replace("{BASE}", base), {
+        headers: { "accept": "application/json" },
+        cache: "no-store"
+      });
+      if (res.ok) return res.json();
+    } catch (_) {}
+  }
+  throw new Error("All RPC endpoints failed");
 }
 
-export default async function handler(
-  _req: VercelRequest,
-  res: VercelResponse
-) {
-  let totalTx = 0;
-  const blockTimes: number[] = [];
-  const heights: number[] = [];
+export default async function handler(_: Request) {
+  try {
+    let totalTx = 0;
+    let blockTimes: number[] = [];
+    let heights: number[] = [];
 
-  for (let chain = 0; chain < CHAIN_COUNT; chain++) {
-    try {
-      const blocks = await fetchHeaders(chain, 10);
+    for (let chain = 0; chain < CHAIN_COUNT; chain++) {
+      const blocks = await fetchWithFallback(
+        "{BASE}/chainweb/0.0/mainnet01/chain/" +
+          chain +
+          "/pact/api/v1/block/headers?limit=2"
+      );
 
       if (blocks.length >= 2) {
         blockTimes.push(
@@ -38,36 +38,29 @@ export default async function handler(
         );
       }
 
-      blocks.forEach((b) => {
+      for (const b of blocks) {
         if (b.txCount) totalTx += b.txCount;
-      });
+      }
 
       if (blocks[0]?.height) heights.push(blocks[0].height);
-    } catch {
-      // skip dead chain
     }
-  }
 
-  if (!heights.length) {
-    return res.status(200).json({
-      status: "OFFLINE",
-      activeChains: 0,
-      tps: 0,
-      avgBlockTime: 0,
-      networkHeight: 0
-    });
+    return new Response(
+      JSON.stringify({
+        tps: Number((totalTx / 30).toFixed(2)),
+        avgBlockTime: Number(
+          (blockTimes.reduce((a, b) => a + b, 0) / blockTimes.length).toFixed(2)
+        ),
+        networkHeight: Math.max(...heights),
+        activeChains: CHAIN_COUNT,
+        status: "LIVE"
+      }),
+      { headers: { "content-type": "application/json" } }
+    );
+  } catch (e: any) {
+    return new Response(
+      JSON.stringify({ error: e.message }),
+      { status: 500 }
+    );
   }
-
-  res.status(200).json({
-    status: "LIVE",
-    activeChains: heights.length,
-    tps: Number((totalTx / 30).toFixed(2)),
-    avgBlockTime: Number(
-      (
-        blockTimes.reduce((a, b) => a + b, 0) /
-        blockTimes.length
-      ).toFixed(2)
-    ),
-    networkHeight: Math.max(...heights)
-  });
 }
