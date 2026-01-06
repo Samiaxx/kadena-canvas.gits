@@ -23,6 +23,7 @@ export default defineConfig({
         ]
       : []),
   ],
+
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -30,16 +31,28 @@ export default defineConfig({
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
   },
+
   css: {
     postcss: {
       plugins: [],
     },
   },
+
   root: path.resolve(import.meta.dirname, "client"),
+
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+
+    // ✅ THIS IS THE IMPORTANT FIX
+    rollupOptions: {
+      external: [
+        "server",
+        /^server\//,
+      ],
+    },
   },
+
   server: {
     host: "0.0.0.0",
     allowedHosts: true,
