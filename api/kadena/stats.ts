@@ -1,59 +1,71 @@
 export const runtime = "nodejs";
 
 const CHAIN_COUNT = 20;
-const BASES = [
-  "https://api.chainweb.com",
-  "https://nodes.kadena.ws"
-];
+const BASE = "https://api.chainweb-community.org";
 
-async function fetchWithFallback(url: string) {
-  for (const base of BASES) {
-    try {
-      const res = await fetch(url.replace("{BASE}", base), {
-        headers: { "accept": "application/json" },
-        cache: "no-store"
-      });
-      if (res.ok) return res.json();
-    } catch (_) {}
+type BlockHeader = {
+  height: number;
+  creationTime: number;
+  txCount?: number;
+};
+
+async function fetchHeaders(chainId: number, limit = 2): Promise<BlockHeader[]> {
+  const res = await fetch(
+    `${BASE}/chainweb/0.0/mainnet01/chain/${chainId}/pact/api/v1/block/headers?limit=${limit}`,
+    {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed chain ${chainId}`);
   }
-  throw new Error("All RPC endpoints failed");
+
+  return res.json();
 }
 
-export default async function handler(_: Request) {
+export default async function handler() {
   try {
     let totalTx = 0;
     let blockTimes: number[] = [];
     let heights: number[] = [];
 
     for (let chain = 0; chain < CHAIN_COUNT; chain++) {
-      const blocks = await fetchWithFallback(
-        "{BASE}/chainweb/0.0/mainnet01/chain/" +
-          chain +
-          "/pact/api/v1/block/headers?limit=2"
-      );
+      try {
+        const blocks = await fetchHeaders(chain, 2);
 
-      if (blocks.length >= 2) {
-        blockTimes.push(
-          blocks[0].creationTime - blocks[1].creationTime
-        );
+        if (blocks.length >= 2) {
+          blockTimes.push(
+            blocks[0].creationTime - blocks[1].creationTime
+          );
+        }
+
+        for (const b of blocks) {
+          if (b.txCount) totalTx += b.txCount;
+        }
+
+        if (blocks[0]?.height) {
+          heights.push(blocks[0].height);
+        }
+      } catch {
+        // skip dead chain
       }
+    }
 
-      for (const b of blocks) {
-        if (b.txCount) totalTx += b.txCount;
-      }
-
-      if (blocks[0]?.height) heights.push(blocks[0].height);
+    if (!heights.length) {
+      throw new Error("No chain data available");
     }
 
     return new Response(
       JSON.stringify({
+        networkHeight: Math.max(...heights),
+        activeChains: CHAIN_COUNT,
         tps: Number((totalTx / 30).toFixed(2)),
         avgBlockTime: Number(
           (blockTimes.reduce((a, b) => a + b, 0) / blockTimes.length).toFixed(2)
         ),
-        networkHeight: Math.max(...heights),
-        activeChains: CHAIN_COUNT,
-        status: "LIVE"
+        status: "LIVE",
       }),
       { headers: { "content-type": "application/json" } }
     );
